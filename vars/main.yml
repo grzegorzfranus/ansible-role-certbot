@@ -1,0 +1,112 @@
+---
+# Ansible Role: Certbot - Internal constants and computed values
+# These are NOT user-overridable. All use double-underscore prefix per CoP §3.1.4.
+
+# ACME server URLs
+__certbot_acme_server_staging: "https://acme-staging-v02.api.letsencrypt.org/directory"
+__certbot_acme_server_production: "https://acme-v02.api.letsencrypt.org/directory"
+
+# Computed ACME server based on environment selection
+__certbot_acme_server: >-
+  {{ __certbot_acme_server_staging
+     if certbot_environment == 'staging'
+     else __certbot_acme_server_production }}
+
+# DNS plugin package mapping (provider -> apt package)
+__certbot_dns_plugin_packages:
+  cloudflare: "python3-certbot-dns-cloudflare"
+  route53: "python3-certbot-dns-route53"
+  digitalocean: "python3-certbot-dns-digitalocean"
+
+# HTTP plugin package mapping (method -> apt package)
+__certbot_http_plugin_packages:
+  nginx: "python3-certbot-nginx"
+  apache: "python3-certbot-apache"
+
+# DNS authenticator name mapping (provider -> certbot authenticator flag)
+__certbot_dns_authenticators:
+  cloudflare: "dns-cloudflare"
+  route53: "dns-route53"
+  digitalocean: "dns-digitalocean"
+
+# DNS credential template mapping (provider -> template path)
+__certbot_dns_credential_templates:
+  cloudflare: "credentials/cloudflare.ini.j2"
+  route53: "credentials/route53.ini.j2"
+  digitalocean: "credentials/digitalocean.ini.j2"
+
+# DNS credential file name mapping (provider -> filename)
+__certbot_dns_credential_files:
+  cloudflare: "cloudflare.ini"
+  route53: "route53.ini"
+  digitalocean: "digitalocean.ini"
+
+# Valid revocation reason codes (RFC 5280)
+__certbot_revoke_reasons:
+  - "unspecified"
+  - "keycompromise"
+  - "affiliationchanged"
+  - "superseded"
+  - "cessationofoperation"
+
+# Supported validation methods
+__certbot_supported_validation_methods:
+  - "http"
+  - "dns"
+
+# Supported HTTP methods
+__certbot_supported_http_methods:
+  - "standalone"
+  - "webroot"
+  - "nginx"
+  - "apache"
+
+# Supported DNS providers
+__certbot_supported_dns_providers:
+  - "cloudflare"
+  - "route53"
+  - "digitalocean"
+
+# Supported key types
+__certbot_supported_key_types:
+  - "rsa"
+  - "ecdsa"
+
+# Supported ECDSA curves
+__certbot_supported_elliptic_curves:
+  - "secp256r1"
+  - "secp384r1"
+  - "secp521r1"
+
+# OS-specific package fallback (overridden by OS-specific var files)
+__certbot_os_packages:
+  - certbot
+
+__certbot_os_prerequisites: []
+
+# Systemd timer and service unit names
+__certbot_timer_name: "certbot-renewal"
+__certbot_cron_file: "certbot-renew"
+
+# Certificate live directory
+__certbot_live_dir: "{{ certbot_config_dir }}/live"
+
+# Diagnostic info
+__certbot_diagnostic_info:
+  role_version: "1.0.0"
+  execution_timestamp: "{{ ansible_facts['date_time'].iso8601 }}"
+  ansible_version: "{{ ansible_version.full }}"
+  target_host: "{{ inventory_hostname }}"
+  connection_type: "{{ ansible_connection }}"
+  python_version: "{{ ansible_facts['python_version'] }}"
+
+# System detection
+__certbot_system_detection:
+  os_family: "{{ ansible_facts['os_family'] }}"
+  distribution: "{{ ansible_facts['distribution'] }}"
+  version: "{{ ansible_facts['distribution_version'] }}"
+  major_version: "{{ ansible_facts['distribution_major_version'] }}"
+  codename: "{{ ansible_facts['distribution_release'] }}"
+  architecture: "{{ ansible_facts['architecture'] }}"
+  package_manager: "{{ ansible_facts['pkg_mgr'] }}"
+  service_manager: "{{ ansible_facts['service_mgr'] }}"

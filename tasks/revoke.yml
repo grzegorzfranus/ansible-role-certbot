@@ -1,0 +1,55 @@
+---
+# Certbot Revoke — Revoke and optionally delete certificates.
+
+- name: Certbot | revoke | Check certificate existence before revocation
+  become: true
+  ansible.builtin.stat:
+    path: "{{ __certbot_live_dir }}/{{ item }}/fullchain.pem"
+  register: __certbot_revoke_check
+  loop: "{{ certbot_revoke_certs }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Certbot | revoke | Display revocation plan
+  ansible.builtin.debug:
+    msg:
+      - "Certificate '{{ item.item }}': {{ 'EXISTS — will be revoked' if item.stat.exists else 'NOT FOUND — skipping' }}"
+      - "   Reason: {{ certbot_revoke_reason }}"
+      - "   Delete after: {{ certbot_revoke_delete_after }}"
+    verbosity: 1
+  loop: "{{ __certbot_revoke_check.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Certbot | revoke | Revoke certificate
+  become: true
+  ansible.builtin.command: >-
+    certbot revoke
+    --non-interactive
+    --cert-name {{ item.item | quote }}
+    --reason {{ certbot_revoke_reason }}
+    --config-dir {{ certbot_config_dir }}
+    {% if not certbot_revoke_delete_after | bool %}--no-delete-after-revoke{% endif %}
+    {% if certbot_revoke_delete_after | bool %}--delete-after-revoke{% endif %}
+  register: __certbot_revoke_result
+  changed_when: "'Congratulations' in __certbot_revoke_result.stdout or 'Successfully revoked' in __certbot_revoke_result.stdout"
+  failed_when:
+    - __certbot_revoke_result.rc != 0
+    - "'already revoked' not in (__certbot_revoke_result.stderr | default(''))"
+  loop: "{{ __certbot_revoke_check.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - item.stat.exists
+    - not ansible_check_mode
+
+- name: Certbot | revoke | Report revocation results
+  ansible.builtin.debug:
+    msg:
+      - "Certificate '{{ item.item.item }}': {{ 'REVOKED' if item.changed | default(false) else 'SKIPPED' }}"
+    verbosity: 0
+  loop: "{{ __certbot_revoke_result.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.item | default('unknown') }}"
+  when:
+    - not ansible_check_mode

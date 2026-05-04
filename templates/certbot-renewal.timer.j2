@@ -1,0 +1,13 @@
+# Certbot automatic renewal timer
+# Managed by Ansible — DO NOT EDIT MANUALLY
+[Unit]
+Description=Certbot automatic certificate renewal timer
+Documentation=https://certbot.eff.org/docs/
+
+[Timer]
+OnCalendar={{ certbot_renewal_schedule }}
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

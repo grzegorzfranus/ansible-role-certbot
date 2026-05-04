@@ -1,0 +1,31 @@
+---
+# Certbot Handlers — Service management operations triggered by tasks.
+
+- name: Certbot | handlers | Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - ansible_facts['service_mgr'] == 'systemd'
+
+- name: Certbot | handlers | Restart certbot timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __certbot_timer_name }}.timer"
+    state: restarted
+    enabled: true
+  when:
+    - ansible_facts['service_mgr'] == 'systemd'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | handlers | Restart nginx
+  become: true
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+
+- name: Certbot | handlers | Restart apache
+  become: true
+  ansible.builtin.service:
+    name: apache2
+    state: restarted

@@ -1,0 +1,232 @@
+---
+# =============================================================================
+# Ansible Role: Certbot - Default Variables
+# =============================================================================
+# This file defines default configuration values for the Certbot role.
+# These values can be overridden by setting them in your playbook or inventory.
+#
+# Supported OS distributions:
+# - Debian 12 (Bookworm)
+# - Ubuntu 24.04 (Noble)
+#
+# Sections:
+#   1. Installation & Lifecycle
+#   2. ACME Account Settings
+#   3. Environment Selection
+#   4. Validation Method
+#   5. Domain Configuration
+#   6. DNS Provider Settings
+#   7. Certificate Paths
+#   8. Certificate Key Settings
+#   9. Auto-Renewal Configuration
+#   10. Dry Run & Validation
+#   11. Certificate Revocation
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Installation & Lifecycle
+# -----------------------------------------------------------------------------
+# Control overall role behavior: install or uninstall
+
+# Role state: 'present' to install, 'absent' to remove
+certbot_state: "present"
+
+# Upgrade Certbot to latest available version if already installed
+certbot_upgrade: false
+
+# -----------------------------------------------------------------------------
+# 2. ACME Account Settings
+# -----------------------------------------------------------------------------
+# Let's Encrypt account registration
+
+# Email address for Let's Encrypt account registration and notifications
+# Required for certificate issuance — used for expiry warnings
+certbot_email: ""
+
+# Automatically agree to the ACME Terms of Service
+# https://letsencrypt.org/documents/LE-SA-v1.4-April-3-2024.pdf
+certbot_agree_tos: true
+
+# -----------------------------------------------------------------------------
+# 3. Environment Selection
+# -----------------------------------------------------------------------------
+# ACME server environment
+
+# Let's Encrypt environment
+# staging: Use staging server (no rate limits, untrusted certs — for testing)
+# production: Use production server (trusted certs, rate limited)
+certbot_environment: "production"
+
+# -----------------------------------------------------------------------------
+# 4. Validation Method
+# -----------------------------------------------------------------------------
+# Domain ownership verification method
+
+# Default validation method for all certificates
+# http: HTTP-01 challenge (port 80 required)
+# dns: DNS-01 challenge (supports wildcards)
+certbot_validation_method: "http"
+
+# HTTP challenge method (used when certbot_validation_method is 'http')
+# standalone: Certbot runs its own temporary web server on port 80
+# webroot: Certbot places challenge files in existing web server document root
+# nginx: Certbot uses running Nginx for challenge AND auto-installs certificate
+# apache: Certbot uses running Apache for challenge AND auto-installs certificate
+certbot_http_method: "standalone"
+
+# Webroot path for HTTP-01 challenge (used when certbot_http_method is 'webroot')
+certbot_webroot_path: "/var/www/html"
+
+# -----------------------------------------------------------------------------
+# 5. Domain Configuration
+# -----------------------------------------------------------------------------
+# Certificate definitions — list of certificates to obtain
+
+# List of certificate definitions
+# Each entry defines one certificate with its own domains and optional overrides
+#
+# Structure:
+#   - name: "example.com"                  # Certificate name (--cert-name)
+#     domains:                             # List of domains (SANs)
+#       - "example.com"
+#       - "www.example.com"
+#     validation_method: "http"            # Override default (optional)
+#     http_method: "nginx"                 # Override default (optional)
+#
+#   - name: "wildcard.example.com"
+#     domains:
+#       - "*.example.com"
+#       - "example.com"
+#     validation_method: "dns"             # Wildcards require DNS
+certbot_domains: []
+
+# -----------------------------------------------------------------------------
+# 6. DNS Provider Settings
+# -----------------------------------------------------------------------------
+# DNS-01 challenge provider configuration
+
+# DNS provider for DNS-01 challenge validation
+# cloudflare: Cloudflare DNS API
+# route53: AWS Route53 DNS API
+# digitalocean: DigitalOcean DNS API
+certbot_dns_provider: "cloudflare"
+
+# DNS propagation wait time (seconds)
+# Time to wait after DNS record creation before validation attempt
+certbot_dns_propagation_seconds: 10
+
+# Cloudflare API token (required when certbot_dns_provider is 'cloudflare')
+# Generate from: https://dash.cloudflare.com/profile/api-tokens
+# Required permission: Zone:DNS:Edit
+certbot_cloudflare_api_token: ""
+
+# AWS Route53 credentials (required when certbot_dns_provider is 'route53')
+# IAM policy requires: route53:ListHostedZones, route53:GetChange,
+# route53:ChangeResourceRecordSets
+certbot_route53_access_key_id: ""
+certbot_route53_secret_access_key: ""
+
+# DigitalOcean API token (required when certbot_dns_provider is 'digitalocean')
+# Generate from: https://cloud.digitalocean.com/account/api/tokens
+# Required scope: read/write
+certbot_digitalocean_token: ""
+
+# Directory for DNS credential files
+certbot_dns_credentials_path: "/etc/letsencrypt/credentials"
+
+# -----------------------------------------------------------------------------
+# 7. Certificate Paths
+# -----------------------------------------------------------------------------
+# Certbot directory configuration
+
+# Certbot configuration directory
+certbot_config_dir: "/etc/letsencrypt"
+
+# Certbot working directory
+certbot_work_dir: "/var/lib/letsencrypt"
+
+# Certbot log directory
+certbot_log_dir: "/var/log/letsencrypt"
+
+# -----------------------------------------------------------------------------
+# 8. Certificate Key Settings
+# -----------------------------------------------------------------------------
+# Cryptographic key configuration
+
+# Key type for generated certificates
+# ecdsa: Elliptic Curve (recommended, smaller keys, faster)
+# rsa: RSA (wider compatibility with older clients)
+certbot_key_type: "ecdsa"
+
+# RSA key size in bits (used when certbot_key_type is 'rsa')
+# Recommended: 2048 (minimum), 4096 (maximum security)
+certbot_rsa_key_size: 4096
+
+# ECDSA elliptic curve (used when certbot_key_type is 'ecdsa')
+# secp256r1: 256-bit (fastest, good security)
+# secp384r1: 384-bit (recommended balance)
+# secp521r1: 521-bit (highest security, slower)
+certbot_elliptic_curve: "secp384r1"
+
+# -----------------------------------------------------------------------------
+# 9. Auto-Renewal Configuration
+# -----------------------------------------------------------------------------
+# Automatic certificate renewal settings
+
+# Enable automatic certificate renewal
+certbot_auto_renewal_enabled: true
+
+# Renewal method
+# systemd: Use systemd timer (recommended for modern systems)
+# cron: Use cron job (legacy systems or preference)
+certbot_renewal_method: "systemd"
+
+# Systemd timer schedule (OnCalendar format)
+# Default: daily at 02:30 AM
+certbot_renewal_schedule: "*-*-* 02:30:00"
+
+# Cron schedule expression (used when certbot_renewal_method is 'cron')
+# Default: daily at 02:30 AM
+certbot_renewal_cron_schedule: "30 2 * * *"
+
+# Pre-renewal hook command (runs before attempting renewal)
+# Example: "systemctl stop nginx"
+certbot_renewal_pre_hook: ""
+
+# Post-renewal hook command (runs after attempting renewal, regardless of success)
+# Example: "systemctl start nginx"
+certbot_renewal_post_hook: ""
+
+# Deploy hook command (runs only after successful certificate renewal)
+# Example: "systemctl reload nginx"
+certbot_renewal_deploy_hook: ""
+
+# -----------------------------------------------------------------------------
+# 10. Dry Run & Validation
+# -----------------------------------------------------------------------------
+# Post-setup validation
+
+# Run a dry-run renewal test after certificate setup
+# Validates that renewal will work without modifying certificates
+certbot_dry_run_test: true
+
+# -----------------------------------------------------------------------------
+# 11. Certificate Revocation
+# -----------------------------------------------------------------------------
+# Certificate revocation settings
+
+# List of certificate names to revoke
+# Each entry should match a --cert-name used during issuance
+# Example: ["example.com", "wildcard.example.com"]
+certbot_revoke_certs: []
+
+# Revocation reason (RFC 5280 reason codes)
+# unspecified: No specific reason
+# keycompromise: Private key has been compromised
+# affiliationchanged: Certificate holder affiliation has changed
+# superseded: Certificate has been replaced by a new one
+# cessationofoperation: Certificate is no longer needed
+certbot_revoke_reason: "unspecified"
+
+# Delete certificate files after successful revocation
+certbot_revoke_delete_after: true

@@ -1,0 +1,218 @@
+---
+# Certbot Certificates — Issue SSL certificates for each domain definition.
+
+- name: Certbot | certificates | Check existing certificates
+  become: true
+  ansible.builtin.stat:
+    path: "{{ __certbot_live_dir }}/{{ item.name }}/fullchain.pem"
+  register: __certbot_existing_certs
+  loop: "{{ certbot_domains }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Certbot | certificates | Display certificate status
+  ansible.builtin.debug:
+    msg:
+      - "Certificate '{{ item.item.name }}': {{ 'EXISTS' if item.stat.exists else 'NOT FOUND — will be issued' }}"
+    verbosity: 1
+  loop: "{{ __certbot_existing_certs.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Certbot | certificates | Determine per-certificate settings
+  ansible.builtin.set_fact:
+    __certbot_cert_requests: >-
+      {{ __certbot_cert_requests | default([]) + [{
+        'name': item.item.name,
+        'domains': item.item.domains,
+        'exists': item.stat.exists,
+        'validation_method': item.item.validation_method | default(certbot_validation_method),
+        'http_method': item.item.http_method | default(certbot_http_method)
+      }] }}
+  loop: "{{ __certbot_existing_certs.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+
+- name: Certbot | certificates | Issue certificate (HTTP standalone)
+  become: true
+  ansible.builtin.command: >-
+    certbot certonly
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | quote }}
+    --cert-name {{ item.name | quote }}
+    --domains {{ item.domains | join(',') }}
+    --authenticator standalone
+    --server {{ __certbot_acme_server }}
+    --key-type {{ certbot_key_type }}
+    {% if certbot_key_type == 'rsa' %}--rsa-key-size {{ certbot_rsa_key_size }}{% endif %}
+    {% if certbot_key_type == 'ecdsa' %}--elliptic-curve {{ certbot_elliptic_curve }}{% endif %}
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_standalone_result
+  changed_when: "'Successfully received certificate' in __certbot_standalone_result.stdout"
+  failed_when:
+    - __certbot_standalone_result.rc != 0
+    - "'Certificate not yet due for renewal' not in __certbot_standalone_result.stderr"
+  loop: "{{ __certbot_cert_requests | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not item.exists
+    - item.validation_method == 'http'
+    - item.http_method == 'standalone'
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Issue certificate (HTTP webroot)
+  become: true
+  ansible.builtin.command: >-
+    certbot certonly
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | quote }}
+    --cert-name {{ item.name | quote }}
+    --domains {{ item.domains | join(',') }}
+    --authenticator webroot
+    --webroot-path {{ certbot_webroot_path }}
+    --server {{ __certbot_acme_server }}
+    --key-type {{ certbot_key_type }}
+    {% if certbot_key_type == 'rsa' %}--rsa-key-size {{ certbot_rsa_key_size }}{% endif %}
+    {% if certbot_key_type == 'ecdsa' %}--elliptic-curve {{ certbot_elliptic_curve }}{% endif %}
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_webroot_result
+  changed_when: "'Successfully received certificate' in __certbot_webroot_result.stdout"
+  failed_when:
+    - __certbot_webroot_result.rc != 0
+    - "'Certificate not yet due for renewal' not in __certbot_webroot_result.stderr"
+  loop: "{{ __certbot_cert_requests | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not item.exists
+    - item.validation_method == 'http'
+    - item.http_method == 'webroot'
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Issue certificate (Nginx)
+  become: true
+  ansible.builtin.command: >-
+    certbot run
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | quote }}
+    --cert-name {{ item.name | quote }}
+    --domains {{ item.domains | join(',') }}
+    --authenticator nginx
+    --installer nginx
+    --server {{ __certbot_acme_server }}
+    --key-type {{ certbot_key_type }}
+    {% if certbot_key_type == 'rsa' %}--rsa-key-size {{ certbot_rsa_key_size }}{% endif %}
+    {% if certbot_key_type == 'ecdsa' %}--elliptic-curve {{ certbot_elliptic_curve }}{% endif %}
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_nginx_result
+  changed_when: "'Successfully received certificate' in __certbot_nginx_result.stdout"
+  failed_when:
+    - __certbot_nginx_result.rc != 0
+    - "'Certificate not yet due for renewal' not in __certbot_nginx_result.stderr"
+  loop: "{{ __certbot_cert_requests | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not item.exists
+    - item.validation_method == 'http'
+    - item.http_method == 'nginx'
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Issue certificate (Apache)
+  become: true
+  ansible.builtin.command: >-
+    certbot run
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | quote }}
+    --cert-name {{ item.name | quote }}
+    --domains {{ item.domains | join(',') }}
+    --authenticator apache
+    --installer apache
+    --server {{ __certbot_acme_server }}
+    --key-type {{ certbot_key_type }}
+    {% if certbot_key_type == 'rsa' %}--rsa-key-size {{ certbot_rsa_key_size }}{% endif %}
+    {% if certbot_key_type == 'ecdsa' %}--elliptic-curve {{ certbot_elliptic_curve }}{% endif %}
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_apache_result
+  changed_when: "'Successfully received certificate' in __certbot_apache_result.stdout"
+  failed_when:
+    - __certbot_apache_result.rc != 0
+    - "'Certificate not yet due for renewal' not in __certbot_apache_result.stderr"
+  loop: "{{ __certbot_cert_requests | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not item.exists
+    - item.validation_method == 'http'
+    - item.http_method == 'apache'
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Issue certificate (DNS)
+  become: true
+  no_log: true
+  ansible.builtin.command: >-
+    certbot certonly
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | quote }}
+    --cert-name {{ item.name | quote }}
+    --domains {{ item.domains | join(',') }}
+    --authenticator {{ __certbot_dns_authenticators[certbot_dns_provider] }}
+    --{{ __certbot_dns_authenticators[certbot_dns_provider] }}-credentials
+    {{ certbot_dns_credentials_path }}/{{ __certbot_dns_credential_files[certbot_dns_provider] }}
+    --{{ __certbot_dns_authenticators[certbot_dns_provider] }}-propagation-seconds
+    {{ certbot_dns_propagation_seconds }}
+    --server {{ __certbot_acme_server }}
+    --key-type {{ certbot_key_type }}
+    {% if certbot_key_type == 'rsa' %}--rsa-key-size {{ certbot_rsa_key_size }}{% endif %}
+    {% if certbot_key_type == 'ecdsa' %}--elliptic-curve {{ certbot_elliptic_curve }}{% endif %}
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_dns_result
+  changed_when: "'Successfully received certificate' in (__certbot_dns_result.stdout | default(''))"
+  failed_when:
+    - __certbot_dns_result.rc != 0
+    - "'Certificate not yet due for renewal' not in (__certbot_dns_result.stderr | default(''))"
+  loop: "{{ __certbot_cert_requests | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not item.exists
+    - item.validation_method == 'dns'
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Verify issued certificates
+  become: true
+  ansible.builtin.stat:
+    path: "{{ __certbot_live_dir }}/{{ item.name }}/fullchain.pem"
+  register: __certbot_verify_certs
+  loop: "{{ certbot_domains }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - not ansible_check_mode
+
+- name: Certbot | certificates | Report certificate status
+  ansible.builtin.debug:
+    msg:
+      - "Certificate '{{ item.item.name }}': {{ 'PRESENT' if item.stat.exists else 'MISSING' }}"
+    verbosity: 1
+  loop: "{{ __certbot_verify_certs.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name | default('unknown') }}"
+  when:
+    - not ansible_check_mode

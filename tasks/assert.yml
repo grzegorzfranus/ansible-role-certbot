@@ -1,0 +1,188 @@
+---
+# Certbot Assert — Runtime validation of variable values.
+# Basic type/choice validation is handled by meta/argument_specs.yml.
+# This file performs runtime-only checks (regex patterns, content validation, cross-field logic).
+
+- name: Certbot | assert | Validate email address format
+  ansible.builtin.assert:
+    that:
+      - certbot_email is defined
+      - certbot_email is string
+      - certbot_email | length > 0
+      - certbot_email is match("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    fail_msg: "Invalid certbot_email '{{ certbot_email | default('undefined') }}'. Must be a valid email address"
+    success_msg: "Email: {{ certbot_email }}"
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_domains | length > 0 or certbot_revoke_certs | length > 0
+
+- name: Certbot | assert | Validate environment choice
+  ansible.builtin.assert:
+    that:
+      - certbot_environment in __certbot_supported_validation_methods | default(['staging', 'production'])
+      - certbot_environment in ['staging', 'production']
+    fail_msg: "Invalid certbot_environment '{{ certbot_environment }}'. Allowed: staging, production"
+    success_msg: "Environment: {{ certbot_environment }}"
+
+- name: Certbot | assert | Validate validation method
+  ansible.builtin.assert:
+    that:
+      - certbot_validation_method in __certbot_supported_validation_methods
+    fail_msg: "Invalid certbot_validation_method '{{ certbot_validation_method }}'. Allowed: {{ __certbot_supported_validation_methods | join(', ') }}"
+    success_msg: "Validation method: {{ certbot_validation_method }}"
+
+- name: Certbot | assert | Validate HTTP method
+  ansible.builtin.assert:
+    that:
+      - certbot_http_method in __certbot_supported_http_methods
+    fail_msg: "Invalid certbot_http_method '{{ certbot_http_method }}'. Allowed: {{ __certbot_supported_http_methods | join(', ') }}"
+    success_msg: "HTTP method: {{ certbot_http_method }}"
+
+- name: Certbot | assert | Validate DNS provider
+  ansible.builtin.assert:
+    that:
+      - certbot_dns_provider in __certbot_supported_dns_providers
+    fail_msg: "Invalid certbot_dns_provider '{{ certbot_dns_provider }}'. Allowed: {{ __certbot_supported_dns_providers | join(', ') }}"
+    success_msg: "DNS provider: {{ certbot_dns_provider }}"
+
+- name: Certbot | assert | Validate key type
+  ansible.builtin.assert:
+    that:
+      - certbot_key_type in __certbot_supported_key_types
+    fail_msg: "Invalid certbot_key_type '{{ certbot_key_type }}'. Allowed: {{ __certbot_supported_key_types | join(', ') }}"
+    success_msg: "Key type: {{ certbot_key_type }}"
+
+- name: Certbot | assert | Validate elliptic curve
+  ansible.builtin.assert:
+    that:
+      - certbot_elliptic_curve in __certbot_supported_elliptic_curves
+    fail_msg: "Invalid certbot_elliptic_curve '{{ certbot_elliptic_curve }}'. Allowed: {{ __certbot_supported_elliptic_curves | join(', ') }}"
+    success_msg: "Elliptic curve: {{ certbot_elliptic_curve }}"
+  when:
+    - certbot_key_type == 'ecdsa'
+
+- name: Certbot | assert | Validate RSA key size
+  ansible.builtin.assert:
+    that:
+      - (certbot_rsa_key_size | int) >= 2048
+      - (certbot_rsa_key_size | int) <= 4096
+    fail_msg: "certbot_rsa_key_size must be between 2048 and 4096"
+    success_msg: "RSA key size: {{ certbot_rsa_key_size }}"
+  when:
+    - certbot_key_type == 'rsa'
+
+- name: Certbot | assert | Validate renewal method
+  ansible.builtin.assert:
+    that:
+      - certbot_renewal_method in ['systemd', 'cron']
+    fail_msg: "Invalid certbot_renewal_method '{{ certbot_renewal_method }}'. Allowed: systemd, cron"
+    success_msg: "Renewal method: {{ certbot_renewal_method }}"
+
+- name: Certbot | assert | Validate revocation reason
+  ansible.builtin.assert:
+    that:
+      - certbot_revoke_reason in __certbot_revoke_reasons
+    fail_msg: "Invalid certbot_revoke_reason '{{ certbot_revoke_reason }}'. Allowed: {{ __certbot_revoke_reasons | join(', ') }}"
+    success_msg: "Revocation reason: {{ certbot_revoke_reason }}"
+  when:
+    - certbot_revoke_certs | length > 0
+
+- name: Certbot | assert | Validate DNS propagation seconds
+  ansible.builtin.assert:
+    that:
+      - (certbot_dns_propagation_seconds | int) > 0
+    fail_msg: "certbot_dns_propagation_seconds must be > 0"
+    success_msg: "DNS propagation: {{ certbot_dns_propagation_seconds }}s"
+
+- name: Certbot | assert | Validate Cloudflare credentials
+  ansible.builtin.assert:
+    that:
+      - certbot_cloudflare_api_token is defined
+      - certbot_cloudflare_api_token | length > 0
+    fail_msg: "certbot_cloudflare_api_token is required when dns_provider is 'cloudflare'"
+  when:
+    - certbot_dns_provider == 'cloudflare'
+    - certbot_validation_method == 'dns' or
+      (certbot_domains | selectattr('validation_method', 'defined') |
+       selectattr('validation_method', 'equalto', 'dns') | list | length > 0)
+
+- name: Certbot | assert | Validate Route53 credentials
+  ansible.builtin.assert:
+    that:
+      - certbot_route53_access_key_id is defined
+      - certbot_route53_access_key_id | length > 0
+      - certbot_route53_secret_access_key is defined
+      - certbot_route53_secret_access_key | length > 0
+    fail_msg: "certbot_route53_access_key_id and certbot_route53_secret_access_key are required when dns_provider is 'route53'"
+  when:
+    - certbot_dns_provider == 'route53'
+    - certbot_validation_method == 'dns' or
+      (certbot_domains | selectattr('validation_method', 'defined') |
+       selectattr('validation_method', 'equalto', 'dns') | list | length > 0)
+
+- name: Certbot | assert | Validate DigitalOcean credentials
+  ansible.builtin.assert:
+    that:
+      - certbot_digitalocean_token is defined
+      - certbot_digitalocean_token | length > 0
+    fail_msg: "certbot_digitalocean_token is required when dns_provider is 'digitalocean'"
+  when:
+    - certbot_dns_provider == 'digitalocean'
+    - certbot_validation_method == 'dns' or
+      (certbot_domains | selectattr('validation_method', 'defined') |
+       selectattr('validation_method', 'equalto', 'dns') | list | length > 0)
+
+- name: Certbot | assert | Validate domains list structure
+  ansible.builtin.assert:
+    that:
+      - certbot_domains is sequence
+    fail_msg: "certbot_domains must be a list of certificate definitions"
+    success_msg: "Domains: {{ certbot_domains | length }} certificate(s) defined"
+  when:
+    - certbot_state | lower != 'absent'
+
+- name: Certbot | assert | Validate each domain entry has required fields
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name is string
+      - item.name | length > 0
+      - item.domains is defined
+      - item.domains is sequence
+      - item.domains | length > 0
+    fail_msg: "Invalid domain entry: each entry must have 'name' (string) and 'domains' (list)"
+    success_msg: "Domain entry '{{ item.name }}' is valid ({{ item.domains | length }} SAN(s))"
+  loop: "{{ certbot_domains }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
+  when:
+    - certbot_domains | length > 0
+
+- name: Certbot | assert | Validate directory paths
+  ansible.builtin.assert:
+    that:
+      - certbot_config_dir is match('^/.+')
+      - certbot_work_dir is match('^/.+')
+      - certbot_log_dir is match('^/.+')
+      - certbot_dns_credentials_path is match('^/.+')
+    fail_msg: "All directory paths must be absolute (start with /)"
+    success_msg: "Directory paths are valid"
+
+- name: Certbot | assert | Validate webroot path
+  ansible.builtin.assert:
+    that:
+      - certbot_webroot_path is match('^/.+')
+    fail_msg: "certbot_webroot_path must be an absolute path"
+    success_msg: "Webroot path: {{ certbot_webroot_path }}"
+  when:
+    - certbot_http_method == 'webroot'
+
+- name: Certbot | assert | Validate boolean flags
+  ansible.builtin.assert:
+    that:
+      - certbot_agree_tos is boolean
+      - certbot_upgrade is boolean
+      - certbot_auto_renewal_enabled is boolean
+      - certbot_dry_run_test is boolean
+      - certbot_revoke_delete_after is boolean
+    fail_msg: "Boolean flags must be true or false"

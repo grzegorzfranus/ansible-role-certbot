@@ -1,0 +1,106 @@
+---
+# Certbot Main — Orchestrates role execution in order.
+# Flow: vars -> assert -> OS check -> install -> configure -> certificates -> revoke -> renewal -> validate -> remove
+
+- name: Certbot | include_vars | Gather OS specific variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags:
+    - always
+    - setup
+    - init
+
+- name: Certbot | assert | Validate all role variables
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - always
+    - validate
+    - setup
+    - init
+
+- name: Certbot | assert | Check if OS is supported
+  ansible.builtin.assert:
+    that:
+      - >-
+        (ansible_facts['distribution'] == 'Ubuntu' and ansible_facts['distribution_version'] == '24.04') or
+        (ansible_facts['distribution'] == 'Debian' and ansible_facts['distribution_major_version'] == '12')
+    fail_msg: "This role only supports Ubuntu 24.04 and Debian 12"
+    success_msg: "Running on supported OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}"
+  tags:
+    - always
+    - setup
+    - init
+
+- name: Certbot | install | Install Certbot and plugins
+  ansible.builtin.include_tasks: install.yml
+  when:
+    - certbot_state | lower != 'absent'
+  tags:
+    - install
+    - setup
+
+- name: Certbot | configure | Configure credentials and directories
+  ansible.builtin.include_tasks: configure.yml
+  when:
+    - certbot_state | lower != 'absent'
+  tags:
+    - configure
+    - setup
+
+- name: Certbot | certificates | Obtain SSL certificates
+  ansible.builtin.include_tasks: certificates.yml
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_domains | length > 0
+  tags:
+    - certificates
+    - setup
+
+- name: Certbot | revoke | Revoke certificates
+  ansible.builtin.include_tasks: revoke.yml
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_revoke_certs | length > 0
+  tags:
+    - revoke
+    - configure
+
+- name: Certbot | renewal | Configure automatic renewal
+  ansible.builtin.include_tasks: renewal.yml
+  when:
+    - certbot_state | lower != 'absent'
+  tags:
+    - renewal
+    - configure
+    - setup
+
+- name: Certbot | validate | Test renewal configuration
+  ansible.builtin.include_tasks: validate.yml
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_dry_run_test | bool
+    - certbot_domains | length > 0
+  tags:
+    - validate
+    - setup
+
+- name: Certbot | state | Handle absent state
+  ansible.builtin.include_tasks: remove.yml
+  when:
+    - certbot_state | lower == 'absent'
+  tags:
+    - always
+    - init
+    - configure
+    - install

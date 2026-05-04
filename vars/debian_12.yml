@@ -1,0 +1,12 @@
+---
+# Ansible Role: Certbot - Debian 12 (Bookworm) OS-specific constants
+
+# Certbot packages (internal, not user-overridable)
+__certbot_os_packages:
+  - certbot
+  - python3-certbot
+
+# OS-specific prerequisite packages (internal)
+__certbot_os_prerequisites:
+  - ca-certificates
+  - python3

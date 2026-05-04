@@ -1,0 +1,59 @@
+---
+# Certbot Remove — Clean up Certbot installation and configuration.
+
+- name: Certbot | remove | Stop and disable systemd timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __certbot_timer_name }}.timer"
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Certbot | remove | Remove systemd unit files
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/etc/systemd/system/{{ __certbot_timer_name }}.service"
+    - "/etc/systemd/system/{{ __certbot_timer_name }}.timer"
+  notify: Certbot | handlers | Reload systemd
+
+- name: Certbot | remove | Remove cron renewal job
+  become: true
+  ansible.builtin.file:
+    path: "/etc/cron.d/{{ __certbot_cron_file }}"
+    state: absent
+
+- name: Certbot | remove | Remove DNS credential files
+  become: true
+  ansible.builtin.file:
+    path: "{{ certbot_dns_credentials_path }}"
+    state: absent
+
+- name: Certbot | remove | Remove Certbot plugin packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - python3-certbot-dns-cloudflare
+    - python3-certbot-dns-route53
+    - python3-certbot-dns-digitalocean
+    - python3-certbot-nginx
+    - python3-certbot-apache
+  failed_when: false
+
+- name: Certbot | remove | Remove Certbot packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ __certbot_os_packages }}"
+    state: absent
+
+- name: Certbot | remove | Display removal notice
+  ansible.builtin.debug:
+    msg:
+      - "Certbot packages removed"
+      - "   Note: Certificate files in {{ certbot_config_dir }} are preserved"
+      - "   To remove certificates, delete {{ certbot_config_dir }} manually"
+    verbosity: 0
