@@ -378,17 +378,27 @@ certbot_dns_propagation_seconds: 60
 
 ```
 ansible-role-certbot/
+├── .ansible-lint             # ansible-lint configuration
+├── .gitignore               # Git ignore rules
+├── .yamllint                # yamllint configuration
+├── .github/
+│   └── workflows/
+│       ├── test-and-validation.yml  # CI: yamllint + Molecule
+│       └── publish-to-galaxy.yml    # CD: Galaxy publish on release
 ├── CHANGELOG.md              # Version history and changes
 ├── LICENSE                   # Apache-2.0 license
 ├── README.md                # This documentation file
 ├── defaults/
 │   └── main.yml             # Default configuration variables
-├── files/                   # Static files (placeholder)
 ├── handlers/
 │   └── main.yml             # Service restart and reload handlers
 ├── meta/
 │   ├── main.yml             # Role metadata and Galaxy information
 │   └── argument_specs.yml   # Ansible-native argument validation (CoP §3.1.20)
+├── molecule/
+│   ├── default/             # Scenario: install + validate
+│   ├── renewal/             # Scenario: systemd timer + cron
+│   └── uninstall/           # Scenario: absent state cleanup
 ├── tasks/
 │   ├── main.yml             # Main task orchestration
 │   ├── assert.yml           # Variable validation and system checks
@@ -536,6 +546,54 @@ ansible-role-certbot/
   roles:
     - role: grzegorzfranus.certbot
 ```
+
+## 🧪 Testing
+
+This role includes [Molecule](https://molecule.readthedocs.io/) test scenarios using Docker containers.
+
+### Prerequisites
+
+```bash
+pip3 install ansible molecule molecule-plugins[docker] docker ansible-lint
+```
+
+### Run Tests
+
+```bash
+# Run default scenario (install + validate)
+molecule test
+
+# Run specific scenario
+molecule test --scenario-name renewal
+molecule test --scenario-name uninstall
+
+# Run with specific distro
+MOLECULE_DISTRO=debian12 molecule test
+MOLECULE_DISTRO=ubuntu2404 molecule test
+```
+
+### Test Scenarios
+
+| Scenario | What It Tests |
+|----------|---------------|
+| `default` | Package installation, binary, directories, credential file permissions |
+| `renewal` | Systemd timer, cron deployment, cross-cleanup when switching methods |
+| `uninstall` | Package removal, timer/cron/credential cleanup via `certbot_state: absent` |
+
+> **Note**: Molecule tests cannot issue real certificates (no DNS control in Docker). Tests validate package installation, directory creation, credential templates, systemd units, and cleanup logic.
+
+## 🔄 CI/CD
+
+### Test & Validation Pipeline
+
+Automatically runs on push to `main` and pull requests:
+
+1. **Lint**: `yamllint` on all YAML files
+2. **Molecule**: Matrix tests across Ubuntu 24.04 and Debian 12
+
+### Galaxy Publish
+
+Automatically publishes the role to Ansible Galaxy on GitHub release creation.
 
 ## 🤝 Contributing
 

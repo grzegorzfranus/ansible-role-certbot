@@ -1,0 +1,36 @@
+---
+# Certbot Molecule — Converge for uninstall scenario.
+
+- name: Molecule | Converge (uninstall)
+  hosts: all
+
+  pre_tasks:
+    - name: Converge | Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      changed_when: false
+      when:
+        - ansible_facts['os_family'] == "Debian"
+
+  vars:
+    certbot_email: "test@example.com"
+    certbot_validation_method: "dns"
+    certbot_dns_provider: "cloudflare"
+    certbot_cloudflare_api_token: "test-token-not-real"
+    certbot_environment: "staging"
+    certbot_auto_renewal_enabled: true
+    certbot_renewal_method: "systemd"
+    certbot_dry_run_test: false
+    certbot_domains: []
+
+  tasks:
+    - name: Converge | Install role first to ensure resources exist
+      ansible.builtin.include_role:
+        name: ../../..
+
+    - name: Converge | Run role in absent state
+      ansible.builtin.include_role:
+        name: ../../..
+      vars:
+        certbot_state: absent

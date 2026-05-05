@@ -1,0 +1,49 @@
+---
+# Certbot Molecule — Converge for renewal scenario.
+# Runs the role twice: first with systemd timer, then switches to cron.
+
+- name: Molecule | Converge (renewal — systemd)
+  hosts: all
+
+  pre_tasks:
+    - name: Converge | Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      changed_when: false
+      when:
+        - ansible_facts['os_family'] == "Debian"
+
+  vars:
+    certbot_email: "test@example.com"
+    certbot_validation_method: "dns"
+    certbot_dns_provider: "cloudflare"
+    certbot_cloudflare_api_token: "test-token-not-real"
+    certbot_environment: "staging"
+    certbot_auto_renewal_enabled: true
+    certbot_renewal_method: "systemd"
+    certbot_renewal_schedule: "*-*-* 03:00:00"
+    certbot_dry_run_test: false
+    certbot_domains: []
+
+  roles:
+    - role: ../../..
+
+- name: Molecule | Converge (renewal — switch to cron)
+  hosts: all
+
+  tasks:
+    - name: Converge | Run role with cron renewal method
+      ansible.builtin.include_role:
+        name: ../../..
+      vars:
+        certbot_email: "test@example.com"
+        certbot_validation_method: "dns"
+        certbot_dns_provider: "cloudflare"
+        certbot_cloudflare_api_token: "test-token-not-real"
+        certbot_environment: "staging"
+        certbot_auto_renewal_enabled: true
+        certbot_renewal_method: "cron"
+        certbot_renewal_cron_schedule: "0 3 * * *"
+        certbot_dry_run_test: false
+        certbot_domains: []
