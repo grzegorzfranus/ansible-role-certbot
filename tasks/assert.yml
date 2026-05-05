@@ -19,7 +19,6 @@
 - name: Certbot | assert | Validate environment choice
   ansible.builtin.assert:
     that:
-      - certbot_environment in __certbot_supported_validation_methods | default(['staging', 'production'])
       - certbot_environment in ['staging', 'production']
     fail_msg: "Invalid certbot_environment '{{ certbot_environment }}'. Allowed: staging, production"
     success_msg: "Environment: {{ certbot_environment }}"
