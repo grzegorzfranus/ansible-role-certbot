@@ -67,6 +67,15 @@
     - certificates
     - setup
 
+- name: Certbot | purge | Remove unmanaged certificates
+  ansible.builtin.include_tasks: purge.yml
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_purge_unmanaged | bool
+  tags:
+    - purge
+    - configure
+
 - name: Certbot | revoke | Revoke certificates
   ansible.builtin.include_tasks: revoke.yml
   when:

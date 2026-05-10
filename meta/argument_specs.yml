@@ -198,6 +198,12 @@ argument_specs:
         type: bool
         default: true
 
+      # Purge
+      certbot_purge_unmanaged:
+        description: "Delete certificates not defined in certbot_domains. WARNING: destructive."
+        type: bool
+        default: false
+
       # Revocation
       certbot_revoke_certs:
         description: "List of certificate names to revoke"

@@ -249,6 +249,12 @@ certbot_elliptic_curve: "secp384r1"
 |----------|-------------|---------|
 | `certbot_dry_run_test` | Run renewal dry-run test after setup | `true` |
 
+### Purge Unmanaged Certificates
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `certbot_purge_unmanaged` | Delete certificates not in `certbot_domains`. **Destructive.** | `false` |
+
 ### Certificate Revocation
 
 | Variable | Description | Default |
@@ -405,6 +411,7 @@ ansible-role-certbot/
 │   ├── install.yml          # Package and plugin installation
 │   ├── configure.yml        # Directory and credential setup
 │   ├── certificates.yml     # Certificate issuance
+│   ├── purge.yml            # Remove unmanaged certificates
 │   ├── renewal.yml          # Auto-renewal configuration
 │   ├── validate.yml         # Dry-run testing
 │   ├── revoke.yml           # Certificate revocation
@@ -432,6 +439,7 @@ ansible-role-certbot/
 - `install` — Package installation tasks
 - `configure` — Service and credential configuration tasks
 - `certificates` — Certificate issuance tasks
+- `purge` — Remove unmanaged certificates
 - `renewal` — Auto-renewal configuration tasks
 - `revoke` — Certificate revocation tasks
 
@@ -543,6 +551,22 @@ ansible-role-certbot/
       - name: "legacy.example.com"
         domains:
           - "legacy.example.com"
+  roles:
+    - role: grzegorzfranus.certbot
+
+# Example 7: Purge Unmanaged Certificates
+# Deletes any certificate on the server NOT listed in certbot_domains
+- name: Enforce Certificate Inventory
+  hosts: web_servers
+  become: true
+  vars:
+    certbot_email: "admin@example.com"
+    certbot_purge_unmanaged: true
+    certbot_domains:
+      - name: "example.com"
+        domains:
+          - "example.com"
+          - "www.example.com"
   roles:
     - role: grzegorzfranus.certbot
 ```

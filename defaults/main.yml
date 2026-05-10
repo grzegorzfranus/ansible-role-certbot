@@ -211,7 +211,18 @@ certbot_renewal_deploy_hook: ""
 certbot_dry_run_test: true
 
 # -----------------------------------------------------------------------------
-# 11. Certificate Revocation
+# 11. Purge Unmanaged Certificates
+# -----------------------------------------------------------------------------
+# Remove certificates not defined in certbot_domains
+
+# When true, any certificate on the server NOT listed in certbot_domains
+# will be deleted. Use with caution — ensures server matches inventory.
+# WARNING: This is a destructive operation. Certificates not in
+# certbot_domains will be permanently removed.
+certbot_purge_unmanaged: false
+
+# -----------------------------------------------------------------------------
+# 12. Certificate Revocation
 # -----------------------------------------------------------------------------
 # Certificate revocation settings
 

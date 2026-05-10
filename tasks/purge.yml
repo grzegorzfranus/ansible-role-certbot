@@ -1,0 +1,74 @@
+---
+# Certbot Purge — Remove certificates not defined in certbot_domains.
+# WARNING: This is a destructive operation.
+
+- name: Certbot | purge | List all existing certificates
+  become: true
+  ansible.builtin.command: "certbot certificates --config-dir {{ certbot_config_dir }}"
+  register: __certbot_purge_list
+  changed_when: false
+  failed_when: false
+
+- name: Certbot | purge | Parse existing certificate names
+  ansible.builtin.set_fact:
+    __certbot_server_cert_names: >-
+      {{ __certbot_purge_list.stdout
+         | regex_findall('Certificate Name: (.+)')
+         | default([]) }}
+
+- name: Certbot | purge | Build managed certificate names list
+  ansible.builtin.set_fact:
+    __certbot_managed_cert_names: >-
+      {{ certbot_domains | map(attribute='name') | list }}
+
+- name: Certbot | purge | Calculate unmanaged certificates
+  ansible.builtin.set_fact:
+    __certbot_unmanaged_certs: >-
+      {{ __certbot_server_cert_names
+         | difference(__certbot_managed_cert_names) }}
+
+- name: Certbot | purge | Display purge plan
+  ansible.builtin.debug:
+    msg:
+      - "=== CERTIFICATE PURGE PLAN ==="
+      - "Server certificates: {{ __certbot_server_cert_names | join(', ') | default('none') }}"
+      - "Managed certificates: {{ __certbot_managed_cert_names | join(', ') | default('none') }}"
+      - "Unmanaged (will be DELETED): {{ __certbot_unmanaged_certs | join(', ') | default('none — nothing to purge') }}"
+    verbosity: 0
+
+- name: Certbot | purge | Delete unmanaged certificate
+  become: true
+  ansible.builtin.command: >-
+    certbot delete
+    --non-interactive
+    --cert-name {{ item | quote }}
+    --config-dir {{ certbot_config_dir }}
+  register: __certbot_purge_result
+  changed_when: __certbot_purge_result.rc == 0
+  loop: "{{ __certbot_unmanaged_certs }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - __certbot_unmanaged_certs | length > 0
+    - not ansible_check_mode
+
+- name: Certbot | purge | Report purge results
+  ansible.builtin.debug:
+    msg:
+      - "Certificate '{{ item.item }}': {{ 'DELETED' if item.changed | default(false) else 'FAILED' }}"
+    verbosity: 0
+  loop: "{{ __certbot_purge_result.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item | default('unknown') }}"
+  when:
+    - __certbot_unmanaged_certs | length > 0
+    - not ansible_check_mode
+
+- name: Certbot | purge | Summary
+  ansible.builtin.debug:
+    msg: >-
+      Purge complete: {{ __certbot_unmanaged_certs | length }}
+      certificate(s) {{ 'would be removed (check mode)' if ansible_check_mode else 'removed' }}
+    verbosity: 0
+  when:
+    - __certbot_unmanaged_certs | length > 0

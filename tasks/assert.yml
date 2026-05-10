@@ -157,6 +157,21 @@
   when:
     - certbot_domains | length > 0
 
+- name: Certbot | assert | Validate domain entry keys are recognized
+  ansible.builtin.assert:
+    that:
+      - (item.keys() | list | difference(['name', 'domains', 'validation_method', 'http_method'])) | length == 0
+    fail_msg: >-
+      Unknown key(s) in domain entry '{{ item.name | default('unnamed') }}':
+      {{ item.keys() | list | difference(['name', 'domains', 'validation_method', 'http_method']) }}.
+      Allowed keys: name, domains, validation_method, http_method
+    success_msg: "Domain entry '{{ item.name }}' keys are valid"
+  loop: "{{ certbot_domains }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed') }}"
+  when:
+    - certbot_domains | length > 0
+
 - name: Certbot | assert | Validate directory paths
   ansible.builtin.assert:
     that:
@@ -184,4 +199,5 @@
       - certbot_auto_renewal_enabled is boolean
       - certbot_dry_run_test is boolean
       - certbot_revoke_delete_after is boolean
+      - certbot_purge_unmanaged is boolean
     fail_msg: "Boolean flags must be true or false"
