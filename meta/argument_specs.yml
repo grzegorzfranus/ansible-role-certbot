@@ -1,0 +1,228 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and configure Certbot (Let's Encrypt) on Debian-based systems"
+    description:
+      - "Installs Certbot, obtains SSL/TLS certificates from Let's Encrypt, and configures automatic renewal."
+      - "Supports HTTP and DNS validation, wildcard certificates, and multiple DNS providers."
+      - "Supports Debian 12 (Bookworm) and Ubuntu 24.04 (Noble)."
+    author: "Grzegorz Franus"
+
+    options:
+      # Installation & Lifecycle
+      certbot_state:
+        description: "Control overall role behavior: install or uninstall"
+        type: str
+        default: "present"
+        choices:
+          - present
+          - absent
+
+      certbot_upgrade:
+        description: "Upgrade Certbot to latest available version if already installed"
+        type: bool
+        default: false
+
+      # ACME Account
+      certbot_email:
+        description: "Email address for Let's Encrypt account registration and expiry notifications"
+        type: str
+        default: ""
+
+      certbot_agree_tos:
+        description: "Automatically agree to the ACME Terms of Service"
+        type: bool
+        default: true
+
+      # Environment
+      certbot_environment:
+        description: "Let's Encrypt ACME environment selection"
+        type: str
+        default: "production"
+        choices:
+          - staging
+          - production
+
+      # Validation Method
+      certbot_validation_method:
+        description: "Default domain validation method for all certificates"
+        type: str
+        default: "http"
+        choices:
+          - http
+          - dns
+
+      certbot_http_method:
+        description: "HTTP challenge method when validation_method is 'http'"
+        type: str
+        default: "standalone"
+        choices:
+          - standalone
+          - webroot
+          - nginx
+          - apache
+
+      certbot_webroot_path:
+        description: "Document root path for webroot HTTP-01 challenge"
+        type: str
+        default: "/var/www/html"
+
+      # Domains
+      certbot_domains:
+        description: "List of certificate definitions with domains and optional per-cert overrides"
+        type: list
+        elements: dict
+        default: []
+
+      # DNS Provider
+      certbot_dns_provider:
+        description: "DNS provider for DNS-01 challenge validation"
+        type: str
+        default: "cloudflare"
+        choices:
+          - cloudflare
+          - route53
+          - digitalocean
+
+      certbot_dns_propagation_seconds:
+        description: "Wait time for DNS propagation before validation attempt (seconds)"
+        type: int
+        default: 10
+
+      certbot_cloudflare_api_token:
+        description: "Cloudflare API token for DNS-01 challenge (Zone:DNS:Edit permission)"
+        type: str
+        default: ""
+
+      certbot_route53_access_key_id:
+        description: "AWS access key ID for Route53 DNS-01 challenge"
+        type: str
+        default: ""
+
+      certbot_route53_secret_access_key:
+        description: "AWS secret access key for Route53 DNS-01 challenge"
+        type: str
+        default: ""
+
+      certbot_digitalocean_token:
+        description: "DigitalOcean API token for DNS-01 challenge (read/write scope)"
+        type: str
+        default: ""
+
+      certbot_dns_credentials_path:
+        description: "Directory for storing DNS provider credential files"
+        type: str
+        default: "/etc/letsencrypt/credentials"
+
+      # Certificate Paths
+      certbot_config_dir:
+        description: "Certbot configuration directory"
+        type: str
+        default: "/etc/letsencrypt"
+
+      certbot_work_dir:
+        description: "Certbot working directory"
+        type: str
+        default: "/var/lib/letsencrypt"
+
+      certbot_log_dir:
+        description: "Certbot log directory"
+        type: str
+        default: "/var/log/letsencrypt"
+
+      # Key Settings
+      certbot_key_type:
+        description: "Cryptographic key type for generated certificates"
+        type: str
+        default: "ecdsa"
+        choices:
+          - rsa
+          - ecdsa
+
+      certbot_rsa_key_size:
+        description: "RSA key size in bits (when key_type is 'rsa')"
+        type: int
+        default: 4096
+
+      certbot_elliptic_curve:
+        description: "ECDSA elliptic curve (when key_type is 'ecdsa')"
+        type: str
+        default: "secp384r1"
+        choices:
+          - secp256r1
+          - secp384r1
+          - secp521r1
+
+      # Auto-Renewal
+      certbot_auto_renewal_enabled:
+        description: "Enable automatic certificate renewal"
+        type: bool
+        default: true
+
+      certbot_renewal_method:
+        description: "Renewal scheduling method"
+        type: str
+        default: "systemd"
+        choices:
+          - systemd
+          - cron
+
+      certbot_renewal_schedule:
+        description: "Systemd timer OnCalendar schedule expression"
+        type: str
+        default: "*-*-* 02:30:00"
+
+      certbot_renewal_cron_schedule:
+        description: "Cron schedule expression for renewal"
+        type: str
+        default: "30 2 * * *"
+
+      certbot_renewal_pre_hook:
+        description: "Command to run before renewal attempt"
+        type: str
+        default: ""
+
+      certbot_renewal_post_hook:
+        description: "Command to run after renewal attempt (regardless of success)"
+        type: str
+        default: ""
+
+      certbot_renewal_deploy_hook:
+        description: "Command to run after successful certificate renewal"
+        type: str
+        default: ""
+
+      # Dry Run
+      certbot_dry_run_test:
+        description: "Run renewal dry-run test after certificate setup"
+        type: bool
+        default: true
+
+      # Purge
+      certbot_purge_unmanaged:
+        description: "Delete certificates not defined in certbot_domains. WARNING: destructive."
+        type: bool
+        default: false
+
+      # Revocation
+      certbot_revoke_certs:
+        description: "List of certificate names to revoke"
+        type: list
+        elements: str
+        default: []
+
+      certbot_revoke_reason:
+        description: "Revocation reason code (RFC 5280)"
+        type: str
+        default: "unspecified"
+        choices:
+          - unspecified
+          - keycompromise
+          - affiliationchanged
+          - superseded
+          - cessationofoperation
+
+      certbot_revoke_delete_after:
+        description: "Delete certificate files after successful revocation"
+        type: bool
+        default: true

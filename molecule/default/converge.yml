@@ -1,0 +1,45 @@
+---
+# Certbot Molecule — Converge for default scenario.
+
+- name: Molecule | Converge
+  hosts: all
+
+  pre_tasks:
+    - name: Converge | Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      changed_when: false
+      when:
+        - ansible_facts['os_family'] == "Debian"
+
+    - name: Converge | Wait for systemd to complete initialization
+      ansible.builtin.systemd:
+        name: multi-user.target
+        state: started
+      register: systemctl_status
+      until: true
+      retries: 30
+      delay: 5
+      when:
+        - ansible_facts['service_mgr'] == 'systemd'
+      changed_when: false
+      failed_when: false
+
+  vars:
+    certbot_email: "test@example.com"
+    certbot_validation_method: "dns"
+    certbot_dns_provider: "cloudflare"
+    certbot_cloudflare_api_token: "test-token-not-real"
+    certbot_environment: "staging"
+    certbot_auto_renewal_enabled: false
+    certbot_dry_run_test: false
+    certbot_domains: []
+
+  roles:
+    - role: ../../..
+
+  post_tasks:
+    - name: Converge | Display role execution summary
+      ansible.builtin.debug:
+        msg: "Certbot role execution completed"

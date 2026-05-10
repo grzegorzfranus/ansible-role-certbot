@@ -1,0 +1,95 @@
+---
+# Certbot Install — Install Certbot packages, plugins, and verify binaries.
+
+- name: Certbot | install | Check if Certbot is already installed
+  ansible.builtin.command: "certbot --version"
+  register: __certbot_existing_version
+  failed_when: false
+  changed_when: false
+
+- name: Certbot | install | Display pre-installation status
+  ansible.builtin.debug:
+    msg:
+      - "Currently Installed: {{ 'Yes - ' + __certbot_existing_version.stdout if __certbot_existing_version.rc == 0 else 'No' }}"
+      - "   Upgrade: {{ certbot_upgrade | bool }}"
+    verbosity: 1
+
+- name: Certbot | install | Install prerequisite packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ __certbot_os_prerequisites }}"
+    state: present
+  register: __certbot_prereq_result
+  until: __certbot_prereq_result is succeeded
+  retries: 3
+  delay: 10
+  when:
+    - __certbot_os_prerequisites | length > 0
+
+- name: Certbot | install | Install Certbot base packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ __certbot_os_packages }}"
+    state: "{{ 'latest' if certbot_upgrade | bool else 'present' }}"
+    update_cache: true
+  register: __certbot_install_result
+  until: __certbot_install_result is succeeded
+  retries: 3
+  delay: 10
+
+- name: Certbot | install | Determine if DNS plugin is needed
+  ansible.builtin.set_fact:
+    __certbot_needs_dns_plugin: >-
+      {{ certbot_validation_method == 'dns' or
+         (certbot_domains | selectattr('validation_method', 'defined') |
+          selectattr('validation_method', 'equalto', 'dns') | list | length > 0) }}
+
+- name: Certbot | install | Install DNS provider plugin
+  become: true
+  ansible.builtin.package:
+    name: "{{ __certbot_dns_plugin_packages[certbot_dns_provider] }}"
+    state: "{{ 'latest' if certbot_upgrade | bool else 'present' }}"
+  register: __certbot_dns_plugin_result
+  until: __certbot_dns_plugin_result is succeeded
+  retries: 3
+  delay: 10
+  when:
+    - __certbot_needs_dns_plugin | bool
+
+- name: Certbot | install | Determine if HTTP plugin is needed
+  ansible.builtin.set_fact:
+    __certbot_needs_http_plugin: >-
+      {{ certbot_http_method in ['nginx', 'apache'] or
+         (certbot_domains | selectattr('http_method', 'defined') |
+          selectattr('http_method', 'in', ['nginx', 'apache']) | list | length > 0) }}
+    __certbot_http_plugins_needed: >-
+      {{ ([certbot_http_method] if certbot_http_method in ['nginx', 'apache'] else []) +
+         (certbot_domains | selectattr('http_method', 'defined') |
+          map(attribute='http_method') | select('in', ['nginx', 'apache']) | list) | unique }}
+
+- name: Certbot | install | Install HTTP authenticator plugin
+  become: true
+  ansible.builtin.package:
+    name: "{{ __certbot_http_plugin_packages[item] }}"
+    state: "{{ 'latest' if certbot_upgrade | bool else 'present' }}"
+  register: __certbot_http_plugin_result
+  until: __certbot_http_plugin_result is succeeded
+  retries: 3
+  delay: 10
+  loop: "{{ __certbot_http_plugins_needed }}"
+  when:
+    - __certbot_needs_http_plugin | bool
+    - __certbot_http_plugins_needed | length > 0
+
+- name: Certbot | install | Verify Certbot installation
+  ansible.builtin.command: "certbot --version"
+  register: __certbot_installed_version
+  changed_when: false
+  failed_when: __certbot_installed_version.rc != 0
+
+- name: Certbot | install | Report installation results
+  ansible.builtin.debug:
+    msg:
+      - "Certbot {{ __certbot_installed_version.stdout | default('unknown') }} installed"
+      - "   Changed: {{ 'Yes' if __certbot_install_result.changed else 'No (already installed)' }}"
+    verbosity: 1

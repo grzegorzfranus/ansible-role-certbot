@@ -1,0 +1,61 @@
+---
+# Certbot Molecule — Verify renewal scenario results.
+# After converge, the role was last run with cron method.
+# Systemd units should be cleaned up, cron file should exist.
+
+- name: Molecule | Verify (renewal)
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Verify | Check cron file exists
+      ansible.builtin.stat:
+        path: "/etc/cron.d/certbot-renew"
+      register: __verify_cron_file
+
+    - name: Verify | Assert cron file is present
+      ansible.builtin.assert:
+        that:
+          - __verify_cron_file['stat']['exists']
+        fail_msg: "Cron renewal file not found at /etc/cron.d/certbot-renew"
+        success_msg: "Cron renewal file verified"
+
+    - name: Verify | Check cron file contains correct schedule
+      ansible.builtin.command: "cat /etc/cron.d/certbot-renew"
+      register: __verify_cron_content
+      changed_when: false
+
+    - name: Verify | Assert cron file contains certbot renew
+      ansible.builtin.assert:
+        that:
+          - "'certbot renew' in __verify_cron_content['stdout']"
+        fail_msg: "Cron file does not contain certbot renew command"
+        success_msg: "Cron file content verified"
+
+    - name: Verify | Check systemd timer unit was cleaned up
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/certbot-renewal.timer"
+      register: __verify_timer_absent
+
+    - name: Verify | Assert systemd timer was removed (cross-cleanup)
+      ansible.builtin.assert:
+        that:
+          - not __verify_timer_absent['stat']['exists']
+        fail_msg: "Systemd timer unit still exists after switch to cron"
+        success_msg: "Systemd timer unit removed (cross-cleanup verified)"
+
+    - name: Verify | Check systemd service unit was cleaned up
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/certbot-renewal.service"
+      register: __verify_service_absent
+
+    - name: Verify | Assert systemd service was removed (cross-cleanup)
+      ansible.builtin.assert:
+        that:
+          - not __verify_service_absent['stat']['exists']
+        fail_msg: "Systemd service unit still exists after switch to cron"
+        success_msg: "Systemd service unit removed (cross-cleanup verified)"
+
+    - name: Verify | All renewal checks completed
+      ansible.builtin.debug:
+        msg: "All Certbot renewal verification checks passed"

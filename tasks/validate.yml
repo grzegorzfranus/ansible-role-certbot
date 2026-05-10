@@ -1,0 +1,35 @@
+---
+# Certbot Validate — Run dry-run renewal test to verify configuration.
+
+- name: Certbot | validate | Run renewal dry-run test
+  become: true
+  ansible.builtin.command: >-
+    certbot renew
+    --dry-run
+    --config-dir {{ certbot_config_dir }}
+    --work-dir {{ certbot_work_dir }}
+    --logs-dir {{ certbot_log_dir }}
+  register: __certbot_dry_run_result
+  changed_when: false
+  failed_when: false
+  when:
+    - not ansible_check_mode
+
+- name: Certbot | validate | Report dry-run results
+  ansible.builtin.debug:
+    msg:
+      - "Dry-run result: {{ 'PASSED' if __certbot_dry_run_result.rc == 0 else 'FAILED' }}"
+      - "{{ __certbot_dry_run_result.stdout_lines | default([]) }}"
+    verbosity: 0
+  when:
+    - not ansible_check_mode
+
+- name: Certbot | validate | Fail if dry-run failed
+  ansible.builtin.fail:
+    msg: >-
+      Certbot renewal dry-run failed. This indicates a configuration problem.
+      Check {{ certbot_log_dir }}/letsencrypt.log for details.
+      stderr: {{ __certbot_dry_run_result.stderr | default('none') }}
+  when:
+    - not ansible_check_mode
+    - __certbot_dry_run_result.rc != 0

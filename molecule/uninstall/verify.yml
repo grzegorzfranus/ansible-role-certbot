@@ -1,0 +1,76 @@
+---
+# Certbot Molecule — Verify uninstall scenario results.
+
+- name: Molecule | Verify (uninstall)
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Verify | Check that certbot package is absent
+      ansible.builtin.command: "dpkg -l certbot"
+      register: __verify_pkg
+      failed_when: false
+      changed_when: false
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Assert certbot package not present
+      ansible.builtin.assert:
+        that:
+          - __verify_pkg['rc'] != 0 or ('no packages found' in (__verify_pkg['stderr'] | lower))
+        success_msg: "Certbot package absent"
+        fail_msg: "Certbot package still present"
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Check systemd timer removed
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/certbot-renewal.timer"
+      register: __verify_timer
+
+    - name: Verify | Assert timer unit removed
+      ansible.builtin.assert:
+        that:
+          - not __verify_timer['stat']['exists']
+        success_msg: "Systemd timer removed"
+        fail_msg: "Systemd timer still present"
+
+    - name: Verify | Check systemd service removed
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/certbot-renewal.service"
+      register: __verify_service
+
+    - name: Verify | Assert service unit removed
+      ansible.builtin.assert:
+        that:
+          - not __verify_service['stat']['exists']
+        success_msg: "Systemd service removed"
+        fail_msg: "Systemd service still present"
+
+    - name: Verify | Check cron file removed
+      ansible.builtin.stat:
+        path: "/etc/cron.d/certbot-renew"
+      register: __verify_cron
+
+    - name: Verify | Assert cron file removed
+      ansible.builtin.assert:
+        that:
+          - not __verify_cron['stat']['exists']
+        success_msg: "Cron file removed"
+        fail_msg: "Cron file still present"
+
+    - name: Verify | Check credentials directory removed
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/credentials"
+      register: __verify_creds
+
+    - name: Verify | Assert credentials directory removed
+      ansible.builtin.assert:
+        that:
+          - not __verify_creds['stat']['exists']
+        success_msg: "Credentials directory removed"
+        fail_msg: "Credentials directory still present"
+
+    - name: Verify | All uninstall checks completed
+      ansible.builtin.debug:
+        msg: "All Certbot uninstall verification checks passed"

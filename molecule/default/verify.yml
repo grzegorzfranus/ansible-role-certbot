@@ -1,0 +1,135 @@
+---
+# Certbot Molecule — Verify default scenario results.
+
+- name: Molecule | Verify Role
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Verify | Check if Certbot package is installed
+      ansible.builtin.command: "dpkg -l certbot"
+      register: __verify_package_check
+      failed_when: false
+      changed_when: false
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Assert Certbot package is installed
+      ansible.builtin.assert:
+        that:
+          - __verify_package_check['rc'] == 0
+          - "'certbot' in __verify_package_check['stdout']"
+        fail_msg: "Certbot package is not installed"
+        success_msg: "Certbot package installation verified"
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Check if Certbot binary exists
+      ansible.builtin.stat:
+        path: "/usr/bin/certbot"
+      register: __verify_certbot_binary
+
+    - name: Verify | Assert Certbot binary exists and is executable
+      ansible.builtin.assert:
+        that:
+          - __verify_certbot_binary['stat']['exists']
+          - __verify_certbot_binary['stat']['executable']
+        fail_msg: "Certbot binary not found or not executable"
+        success_msg: "Certbot binary verified"
+
+    - name: Verify | Test Certbot version command
+      ansible.builtin.command: "/usr/bin/certbot --version"
+      register: __verify_version_check
+      changed_when: false
+
+    - name: Verify | Show Certbot version
+      ansible.builtin.debug:
+        msg: "Certbot version: {{ __verify_version_check['stdout'] }}"
+
+    - name: Verify | Check DNS plugin is installed
+      ansible.builtin.command: "dpkg -l python3-certbot-dns-cloudflare"
+      register: __verify_dns_plugin
+      failed_when: false
+      changed_when: false
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Assert DNS plugin is installed
+      ansible.builtin.assert:
+        that:
+          - __verify_dns_plugin['rc'] == 0
+        fail_msg: "Cloudflare DNS plugin is not installed"
+        success_msg: "Cloudflare DNS plugin verified"
+      when:
+        - ansible_facts['pkg_mgr'] == 'apt'
+
+    - name: Verify | Check config directory exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt"
+      register: __verify_config_dir
+
+    - name: Verify | Assert config directory exists
+      ansible.builtin.assert:
+        that:
+          - __verify_config_dir['stat']['exists']
+          - __verify_config_dir['stat']['isdir']
+        fail_msg: "Config directory /etc/letsencrypt not found"
+        success_msg: "Config directory verified"
+
+    - name: Verify | Check credentials directory exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/credentials"
+      register: __verify_creds_dir
+
+    - name: Verify | Assert credentials directory exists with correct permissions
+      ansible.builtin.assert:
+        that:
+          - __verify_creds_dir['stat']['exists']
+          - __verify_creds_dir['stat']['isdir']
+          - __verify_creds_dir['stat']['mode'] == '0700'
+        fail_msg: "Credentials directory not found or incorrect permissions"
+        success_msg: "Credentials directory verified (mode 0700)"
+
+    - name: Verify | Check credential file exists
+      ansible.builtin.stat:
+        path: "/etc/letsencrypt/credentials/cloudflare.ini"
+      register: __verify_cred_file
+
+    - name: Verify | Assert credential file exists with correct permissions
+      ansible.builtin.assert:
+        that:
+          - __verify_cred_file['stat']['exists']
+          - __verify_cred_file['stat']['mode'] == '0600'
+          - __verify_cred_file['stat']['pw_name'] == 'root'
+        fail_msg: "Credential file not found or incorrect permissions"
+        success_msg: "Credential file verified (mode 0600, owner root)"
+
+    - name: Verify | Check work directory exists
+      ansible.builtin.stat:
+        path: "/var/lib/letsencrypt"
+      register: __verify_work_dir
+
+    - name: Verify | Assert work directory exists
+      ansible.builtin.assert:
+        that:
+          - __verify_work_dir['stat']['exists']
+          - __verify_work_dir['stat']['isdir']
+        fail_msg: "Work directory /var/lib/letsencrypt not found"
+        success_msg: "Work directory verified"
+
+    - name: Verify | Check log directory exists
+      ansible.builtin.stat:
+        path: "/var/log/letsencrypt"
+      register: __verify_log_dir
+
+    - name: Verify | Assert log directory exists
+      ansible.builtin.assert:
+        that:
+          - __verify_log_dir['stat']['exists']
+          - __verify_log_dir['stat']['isdir']
+        fail_msg: "Log directory /var/log/letsencrypt not found"
+        success_msg: "Log directory verified"
+
+    - name: Verify | All checks completed successfully
+      ansible.builtin.debug:
+        msg: "All Certbot default verification checks passed"

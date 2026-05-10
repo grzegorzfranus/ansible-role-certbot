@@ -1,0 +1,13 @@
+# Certbot automatic certificate renewal cron job
+# Managed by Ansible — DO NOT EDIT MANUALLY
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+{{ certbot_renewal_cron_schedule }} root certbot renew --quiet \
+  --config-dir {{ certbot_config_dir }} \
+  --work-dir {{ certbot_work_dir }} \
+  --logs-dir {{ certbot_log_dir }}{% if certbot_renewal_pre_hook | length > 0 %} \
+  --pre-hook "{{ certbot_renewal_pre_hook }}"{% endif %}{% if certbot_renewal_post_hook | length > 0 %} \
+  --post-hook "{{ certbot_renewal_post_hook }}"{% endif %}{% if certbot_renewal_deploy_hook | length > 0 %} \
+  --deploy-hook "{{ certbot_renewal_deploy_hook }}"{% endif %}
+

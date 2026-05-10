@@ -1,0 +1,133 @@
+---
+# Certbot Renewal — Configure automatic certificate renewal via systemd timer or cron.
+
+- name: Certbot | renewal | Display renewal configuration
+  ansible.builtin.debug:
+    msg:
+      - "Auto-renewal: {{ 'Enabled' if certbot_auto_renewal_enabled | bool else 'Disabled' }}"
+      - "   Method: {{ certbot_renewal_method }}"
+      - "   Schedule: {{ certbot_renewal_schedule if certbot_renewal_method == 'systemd' else certbot_renewal_cron_schedule }}"
+    verbosity: 1
+
+# --- Systemd Timer ---
+
+- name: Certbot | renewal | Deploy systemd service unit
+  become: true
+  ansible.builtin.template:
+    src: certbot-renewal.service.j2
+    dest: "/etc/systemd/system/{{ __certbot_timer_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Certbot | handlers | Reload systemd
+  when:
+    - certbot_renewal_method == 'systemd'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | renewal | Deploy systemd timer unit
+  become: true
+  ansible.builtin.template:
+    src: certbot-renewal.timer.j2
+    dest: "/etc/systemd/system/{{ __certbot_timer_name }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify:
+    - Certbot | handlers | Reload systemd
+    - Certbot | handlers | Restart certbot timer
+  when:
+    - certbot_renewal_method == 'systemd'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | renewal | Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+  when:
+    - certbot_renewal_method == 'systemd'
+
+- name: Certbot | renewal | Enable and start systemd timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __certbot_timer_name }}.timer"
+    state: started
+    enabled: true
+    daemon_reload: true
+  when:
+    - certbot_renewal_method == 'systemd'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | renewal | Disable systemd timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __certbot_timer_name }}.timer"
+    state: stopped
+    enabled: false
+  failed_when: false
+  when:
+    - certbot_renewal_method == 'systemd'
+    - not certbot_auto_renewal_enabled | bool
+
+# --- Cron ---
+
+- name: Certbot | renewal | Deploy cron renewal job
+  become: true
+  ansible.builtin.template:
+    src: certbot-renew-cron.j2
+    dest: "/etc/cron.d/{{ __certbot_cron_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when:
+    - certbot_renewal_method == 'cron'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | renewal | Remove cron renewal job
+  become: true
+  ansible.builtin.file:
+    path: "/etc/cron.d/{{ __certbot_cron_file }}"
+    state: absent
+  when:
+    - certbot_renewal_method == 'cron'
+    - not certbot_auto_renewal_enabled | bool
+
+# --- Cleanup opposite method ---
+
+- name: Certbot | renewal | Remove systemd units when using cron
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/etc/systemd/system/{{ __certbot_timer_name }}.service"
+    - "/etc/systemd/system/{{ __certbot_timer_name }}.timer"
+  notify: Certbot | handlers | Reload systemd
+  when:
+    - certbot_renewal_method == 'cron'
+
+- name: Certbot | renewal | Remove cron job when using systemd
+  become: true
+  ansible.builtin.file:
+    path: "/etc/cron.d/{{ __certbot_cron_file }}"
+    state: absent
+  when:
+    - certbot_renewal_method == 'systemd'
+
+- name: Certbot | renewal | Verify renewal timer status
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __certbot_timer_name }}.timer"
+  register: __certbot_timer_status
+  failed_when: false
+  when:
+    - certbot_renewal_method == 'systemd'
+    - certbot_auto_renewal_enabled | bool
+
+- name: Certbot | renewal | Report renewal status
+  ansible.builtin.debug:
+    msg:
+      - "Renewal timer: {{ __certbot_timer_status.status.ActiveState | default('not configured') }}"
+    verbosity: 1
+  when:
+    - certbot_renewal_method == 'systemd'

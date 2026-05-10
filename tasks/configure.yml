@@ -1,0 +1,50 @@
+---
+# Certbot Configure — Create directories and deploy credential files.
+
+- name: Certbot | configure | Create Certbot directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ certbot_config_dir }}"
+    - "{{ certbot_work_dir }}"
+    - "{{ certbot_log_dir }}"
+
+- name: Certbot | configure | Create credentials directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ certbot_dns_credentials_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when:
+    - __certbot_needs_dns_plugin | default(false) | bool
+
+- name: Certbot | configure | Deploy DNS credential file
+  become: true
+  no_log: true
+  ansible.builtin.template:
+    src: "{{ __certbot_dns_credential_templates[certbot_dns_provider] }}"
+    dest: "{{ certbot_dns_credentials_path }}/{{ __certbot_dns_credential_files[certbot_dns_provider] }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  when:
+    - __certbot_needs_dns_plugin | default(false) | bool
+
+- name: Certbot | configure | Display configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Configuration directory: {{ certbot_config_dir }}"
+      - "   Environment: {{ certbot_environment }}"
+      - "   ACME server: {{ __certbot_acme_server }}"
+      - "   Validation: {{ certbot_validation_method }} ({{ certbot_http_method if certbot_validation_method == 'http' else certbot_dns_provider }})"
+      - "   Key type: {{ certbot_key_type }}"
+      - "   Domains: {{ certbot_domains | length }} certificate(s)"
+    verbosity: 1
