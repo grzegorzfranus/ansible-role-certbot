@@ -31,6 +31,14 @@
       when:
         - ansible_facts['os_family'] == "Debian"
 
+    - name: Prepare | Remove conflicting pip crypto packages (Debian 12 Docker compat)
+      ansible.builtin.command: pip3 uninstall -y cryptography pyopenssl
+      changed_when: true
+      failed_when: false
+      when:
+        - ansible_facts['distribution'] == "Debian"
+        - ansible_facts['distribution_major_version'] == "12"
+
     - name: Prepare | Wait for systemd to complete initialization
       ansible.builtin.systemd:
         name: multi-user.target
