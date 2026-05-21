@@ -1,8 +1,8 @@
 # Ansible Role: Certbot
 
-|Source|Version|Tests|License|
-|------|-------|-------|-------|
-|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-certbot)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-certbot)](https://github.com/grzegorzfranus/ansible-role-certbot/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-certbot/actions/workflows/test-and-validation.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-certbot/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
+|Source|Version|CI|License|
+|------|-------|--|-------|
+|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-certbot)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-certbot)](https://github.com/grzegorzfranus/ansible-role-certbot/releases)|[![CI](https://github.com/grzegorzfranus/ansible-role-certbot/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-certbot/actions/workflows/ci.yml)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role installs and configures Certbot for automated SSL/TLS certificate management with Let's Encrypt. It supports multiple validation methods, DNS providers, web server integrations, wildcard certificates, automatic renewal, and certificate revocation.
 
@@ -389,8 +389,10 @@ ansible-role-certbot/
 ├── .yamllint                # yamllint configuration
 ├── .github/
 │   └── workflows/
-│       ├── test-and-validation.yml  # CI: yamllint + Molecule
-│       └── publish-to-galaxy.yml    # CD: Galaxy publish on release
+│       ├── ci.yml                   # CI pipeline (reusable ansible-ci.yml)
+│       └── release.yml             # Release Please + Galaxy publish
+├── .release-please-manifest.json    # Release Please version manifest
+├── release-please-config.json       # Release Please configuration
 ├── CHANGELOG.md              # Version history and changes
 ├── LICENSE                   # Apache-2.0 license
 ├── README.md                # This documentation file
@@ -400,7 +402,7 @@ ansible-role-certbot/
 │   └── main.yml             # Service restart and reload handlers
 ├── meta/
 │   ├── main.yml             # Role metadata and Galaxy information
-│   └── argument_specs.yml   # Ansible-native argument validation (CoP §3.1.20)
+│   └── argument_specs.yml   # Ansible-native argument validation
 ├── molecule/
 │   ├── default/             # Scenario: install + validate
 │   ├── renewal/             # Scenario: systemd timer + cron
@@ -608,28 +610,42 @@ MOLECULE_DISTRO=ubuntu2404 molecule test
 
 ## 🔄 CI/CD
 
-### Test & Validation Pipeline
+### CI Pipeline
 
-Automatically runs on push to `main` and pull requests:
+Runs on every Pull Request via centralized reusable workflow:
 
-1. **Lint**: `yamllint` on all YAML files
-2. **Molecule**: Matrix tests across Ubuntu 24.04 and Debian 12
+1. **Branch Name Lint** — enforces naming conventions
+2. **YAML Lint** — validates all YAML files
+3. **Ansible Lint** — enforces best practices
+4. **Security Scan** — TruffleHog secret detection
+5. **Molecule Tests** — matrix across Ubuntu 24.04 and Debian 12
+6. **Merge Check** — aggregated status gate for branch protection
 
-### Galaxy Publish
+### Release & Publish
 
-Automatically publishes the role to Ansible Galaxy on GitHub release creation.
+Automated via [Release Please](https://github.com/googleapis/release-please):
+
+1. Merge to `main` → Release Please creates a Release PR with changelog
+2. Merge Release PR → creates Git tag + GitHub Release
+3. Galaxy publish triggers automatically on release
 
 ## 🤝 Contributing
 
 Contributions, bug reports, and feature requests are welcome!
 
-- Fork the repository and create your branch from `main`.
-- Make your changes with clear, descriptive commit messages.
-- Ensure your code passes all Molecule and lint tests.
-- Submit a pull request describing your changes and the motivation.
-- For major changes, please open an issue first to discuss what you would like to change.
-
-If you have questions or suggestions, feel free to open an issue or contact the author via GitHub.
+- Fork the repository and create your branch from `main`
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+  - `feat:` — new features (minor version bump)
+  - `fix:` — bug fixes (patch version bump)
+  - `docs:` — documentation changes
+  - `refactor:` — code refactoring
+  - `test:` — test additions
+  - `ci:` — CI/CD changes
+  - `chore:` — maintenance tasks
+- Use branch naming convention: `feature/`, `bugfix/`, `hotfix/`, `docs/`, `refactor/`, `test/`, `chore/`, `ci/`
+- Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
+- Submit a pull request describing your changes
+- For major changes, please open an issue first to discuss what you would like to change
 
 ## 📝 License
 
