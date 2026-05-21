@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/grzegorzfranus/ansible-role-certbot/compare/v1.3.0...v1.4.0) (2026-05-21)
+
+
+### Features
+
+* migrate to centralized CI, Release Please, and Galaxy publish ([#5](https://github.com/grzegorzfranus/ansible-role-certbot/issues/5)) ([d666b6c](https://github.com/grzegorzfranus/ansible-role-certbot/commit/d666b6c17dc6c83fd75028f1468a98b1c560b659))
+
+
+### Bug Fixes
+
+* **ci:** upgrade to Node.js 24 actions and standardize enterprise naming ([db45350](https://github.com/grzegorzfranus/ansible-role-certbot/commit/db453500183206ba595070b972ff066f5d1d86e1))
+* **ci:** upgrade to Node.js 24 actions and standardize enterprise naming ([6d74346](https://github.com/grzegorzfranus/ansible-role-certbot/commit/6d743461427fb4a0c5301c65be7ec2d25c31c806))
+* shorten Galaxy description to fit 255 char limit ([cc69525](https://github.com/grzegorzfranus/ansible-role-certbot/commit/cc695258dab0ccdb5cb3e84df16a323cdde27632))
+* shorten Galaxy description to fit 255 char limit ([a9f0272](https://github.com/grzegorzfranus/ansible-role-certbot/commit/a9f027256b494a8319cb0eb58618a6a007a555b0))
+
 ## [1.0.4] - 2026-05-18
 
 ### Fixed
