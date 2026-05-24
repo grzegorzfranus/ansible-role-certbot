@@ -615,11 +615,12 @@ MOLECULE_DISTRO=ubuntu2404 molecule test
 Runs on every Pull Request via centralized reusable workflow:
 
 1. **Branch Name Lint** — enforces naming conventions
-2. **YAML Lint** — validates all YAML files
-3. **Ansible Lint** — enforces best practices
-4. **Security Scan** — TruffleHog secret detection
-5. **Molecule Tests** — matrix across Ubuntu 24.04 and Debian 12
-6. **Merge Check** — aggregated status gate for branch protection
+2. **PR Title Lint** — validates Pull Request titles against Conventional Commits
+3. **YAML Lint** — validates all YAML files
+4. **Ansible Lint** — enforces best practices
+5. **Security Scan** — TruffleHog secret detection
+6. **Molecule Tests** — matrix across Ubuntu 24.04 and Debian 12
+7. **Merge Check** — aggregated status gate for branch protection
 
 ### Release & Publish
 
