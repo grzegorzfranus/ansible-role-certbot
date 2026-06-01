@@ -3,9 +3,10 @@ galaxy_info:
   role_name: certbot
   author: Grzegorz Franus
   namespace: grzegorzfranus
-  description: >-
-    Install and configure Certbot for Let's Encrypt SSL/TLS certificates.
-    Supports HTTP and DNS validation, wildcard certs, auto-renewal, and revocation.
+  description: >
+    Ansible role to install and configure Certbot for automated Let's Encrypt SSL/TLS
+    certificate management. Supports HTTP-01 and DNS-01 validation (Cloudflare, Route53,
+    DigitalOcean), renewal, and revocation.
   license: Apache-2.0
   company: EWARE
   min_ansible_version: "2.16"

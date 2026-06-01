@@ -1,5 +1,9 @@
 ---
-# Certbot Main — Orchestrates role execution in order.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Main
+# =============================================================================
+# Orchestrates role execution in order.
+# =============================================================================
 # Flow: vars -> assert -> OS check -> install -> configure -> certificates -> revoke -> renewal -> validate -> remove
 
 - name: Certbot | include_vars | Gather OS specific variables

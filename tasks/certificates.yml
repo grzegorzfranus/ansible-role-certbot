@@ -1,5 +1,9 @@
 ---
-# Certbot Certificates — Issue SSL certificates for each domain definition.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Certificates
+# =============================================================================
+# Issue SSL certificates for each domain definition.
+# =============================================================================
 
 - name: Certbot | certificates | Check existing certificates
   become: true
@@ -33,6 +37,8 @@
   loop_control:
     label: "{{ item.item.name }}"
 
+# Justification: Use command module because obtaining/issuing certificates
+# via Let's Encrypt requires executing the Certbot CLI tool with standalone authenticator, which has no native Ansible module.
 - name: Certbot | certificates | Issue certificate (HTTP standalone)
   become: true
   ansible.builtin.command: >-
@@ -64,6 +70,8 @@
     - item.http_method == 'standalone'
     - not ansible_check_mode
 
+# Justification: Use command module because obtaining/issuing certificates
+# via Let's Encrypt requires executing the Certbot CLI tool with webroot path, which has no native Ansible module.
 - name: Certbot | certificates | Issue certificate (HTTP webroot)
   become: true
   ansible.builtin.command: >-
@@ -96,6 +104,8 @@
     - item.http_method == 'webroot'
     - not ansible_check_mode
 
+# Justification: Use command module because obtaining/issuing certificates
+# via Let's Encrypt requires executing the Certbot CLI tool with Nginx integration, which has no native Ansible module.
 - name: Certbot | certificates | Issue certificate (Nginx)
   become: true
   ansible.builtin.command: >-
@@ -128,6 +138,8 @@
     - item.http_method == 'nginx'
     - not ansible_check_mode
 
+# Justification: Use command module because obtaining/issuing certificates
+# via Let's Encrypt requires executing the Certbot CLI tool with Apache integration, which has no native Ansible module.
 - name: Certbot | certificates | Issue certificate (Apache)
   become: true
   ansible.builtin.command: >-
@@ -160,6 +172,8 @@
     - item.http_method == 'apache'
     - not ansible_check_mode
 
+# Justification: Use command module because obtaining/issuing certificates
+# via Let's Encrypt requires executing the Certbot CLI tool with DNS validation plugins, which has no native Ansible module.
 - name: Certbot | certificates | Issue certificate (DNS)
   become: true
   no_log: true
