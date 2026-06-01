@@ -1,5 +1,9 @@
 ---
-# Certbot Revoke — Revoke and optionally delete certificates.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Revocation
+# =============================================================================
+# Revoke and optionally delete certificates.
+# =============================================================================
 
 - name: Certbot | revoke | Check certificate existence before revocation
   become: true
@@ -21,6 +25,8 @@
   loop_control:
     label: "{{ item.item }}"
 
+# Justification: Use command module because revoking certificates from Let's Encrypt
+# requires running 'certbot revoke', which has no native Ansible module.
 - name: Certbot | revoke | Revoke certificate
   become: true
   ansible.builtin.command: >-

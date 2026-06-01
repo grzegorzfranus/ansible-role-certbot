@@ -1,5 +1,9 @@
 ---
-# Certbot Remove — Clean up Certbot installation and configuration.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Remove
+# =============================================================================
+# Clean up Certbot installation and configuration.
+# =============================================================================
 
 - name: Certbot | remove | Stop and disable systemd timer
   become: true

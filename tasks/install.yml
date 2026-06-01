@@ -1,6 +1,12 @@
 ---
-# Certbot Install — Install Certbot packages, plugins, and verify binaries.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Install
+# =============================================================================
+# Install Certbot packages, plugins, and verify binaries.
+# =============================================================================
 
+# Justification: Use command module because checking if the Certbot binary is
+# installed requires running 'certbot --version', which has no native Ansible module.
 - name: Certbot | install | Check if Certbot is already installed
   ansible.builtin.command: "certbot --version"
   register: __certbot_existing_version
@@ -81,6 +87,8 @@
     - __certbot_needs_http_plugin | bool
     - __certbot_http_plugins_needed | length > 0
 
+# Justification: Use command module because verifying the installed Certbot
+# package installation requires running 'certbot --version', which has no native Ansible module.
 - name: Certbot | install | Verify Certbot installation
   ansible.builtin.command: "certbot --version"
   register: __certbot_installed_version

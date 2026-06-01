@@ -1,5 +1,9 @@
 ---
-# Certbot Renewal — Configure automatic certificate renewal via systemd timer or cron.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Renewal
+# =============================================================================
+# Configure automatic certificate renewal via systemd timer or cron.
+# =============================================================================
 
 - name: Certbot | renewal | Display renewal configuration
   ansible.builtin.debug:

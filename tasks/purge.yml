@@ -1,7 +1,12 @@
 ---
-# Certbot Purge — Remove certificates not defined in certbot_domains.
-# WARNING: This is a destructive operation.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Purge
+# =============================================================================
+# Remove certificates not defined in certbot_domains.
+# =============================================================================
 
+# Justification: Use command module because listing configured Let's Encrypt certificates
+# requires querying the Certbot CLI client, which has no native Ansible module.
 - name: Certbot | purge | List all existing certificates
   become: true
   ansible.builtin.command: "certbot certificates --config-dir {{ certbot_config_dir }}"
@@ -36,6 +41,8 @@
       - "Unmanaged (will be DELETED): {{ __certbot_unmanaged_certs | join(', ') | default('none — nothing to purge') }}"
     verbosity: 0
 
+# Justification: Use command module because deleting specific Certbot certificates
+# requires invoking 'certbot delete', which has no native Ansible module.
 - name: Certbot | purge | Delete unmanaged certificate
   become: true
   ansible.builtin.command: >-

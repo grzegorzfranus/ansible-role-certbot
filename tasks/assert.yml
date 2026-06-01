@@ -1,7 +1,9 @@
 ---
-# Certbot Assert — Runtime validation of variable values.
-# Basic type/choice validation is handled by meta/argument_specs.yml.
-# This file performs runtime-only checks (regex patterns, content validation, cross-field logic).
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Assertions
+# =============================================================================
+# Runtime validation of variable values and system compatibility checks.
+# =============================================================================
 
 - name: Certbot | assert | Validate email address format
   ansible.builtin.assert:
@@ -201,3 +203,53 @@
       - certbot_revoke_delete_after is boolean
       - certbot_purge_unmanaged is boolean
     fail_msg: "Boolean flags must be true or false"
+
+- name: Certbot | assert | Validate role state
+  ansible.builtin.assert:
+    that:
+      - certbot_state is string
+      - certbot_state | lower in ['present', 'absent']
+    fail_msg: "Invalid certbot_state '{{ certbot_state | default('undefined') }}'. Must be 'present' or 'absent'"
+    success_msg: "Role state: {{ certbot_state }}"
+
+- name: Certbot | assert | Validate systemd renewal schedule
+  ansible.builtin.assert:
+    that:
+      - certbot_renewal_schedule is defined
+      - certbot_renewal_schedule is string
+      - certbot_renewal_schedule | length > 0
+    fail_msg: "certbot_renewal_schedule must be a non-empty string when using systemd renewal"
+    success_msg: "Systemd renewal schedule: {{ certbot_renewal_schedule }}"
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_auto_renewal_enabled | bool
+    - certbot_renewal_method == 'systemd'
+
+- name: Certbot | assert | Validate cron renewal schedule
+  ansible.builtin.assert:
+    that:
+      - certbot_renewal_cron_schedule is defined
+      - certbot_renewal_cron_schedule is string
+      - certbot_renewal_cron_schedule | length > 0
+    fail_msg: "certbot_renewal_cron_schedule must be a non-empty string when using cron renewal"
+    success_msg: "Cron renewal schedule: {{ certbot_renewal_cron_schedule }}"
+  when:
+    - certbot_state | lower != 'absent'
+    - certbot_auto_renewal_enabled | bool
+    - certbot_renewal_method == 'cron'
+
+- name: Certbot | assert | Validate renewal hook variables
+  ansible.builtin.assert:
+    that:
+      - certbot_renewal_pre_hook is string
+      - certbot_renewal_post_hook is string
+      - certbot_renewal_deploy_hook is string
+    fail_msg: "Renewal hook parameters must be strings (empty strings are allowed)"
+    success_msg: "Renewal hooks are valid"
+
+- name: Certbot | assert | Validate revoke certificates list
+  ansible.builtin.assert:
+    that:
+      - certbot_revoke_certs is sequence
+    fail_msg: "certbot_revoke_certs must be a list of certificate names to revoke"
+    success_msg: "Revocation list is valid ({{ certbot_revoke_certs | length }} certs)"

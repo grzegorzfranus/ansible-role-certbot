@@ -1,6 +1,12 @@
 ---
-# Certbot Validate — Run dry-run renewal test to verify configuration.
+# =============================================================================
+# Ansible Role: Certbot - Tasks: Validation
+# =============================================================================
+# Run dry-run renewal test to verify configuration.
+# =============================================================================
 
+# Justification: Use command module because executing a dry-run certificate renewal validation
+# requires invoking 'certbot renew --dry-run', which has no native Ansible module.
 - name: Certbot | validate | Run renewal dry-run test
   become: true
   ansible.builtin.command: >-

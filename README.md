@@ -305,7 +305,7 @@ sudo systemctl status certbot-renewal.timer
 sudo systemctl list-timers | grep certbot
 ```
 
-## 🛡️ Security Considerations
+## 🛡️ Security Features
 
 - ✅ **Credential Protection**: DNS credentials stored with `0600` permissions in isolated directory
 - ✅ **Secret Masking**: All credential tasks use `no_log: true` to prevent leakage
@@ -324,6 +324,20 @@ vault_certbot_email: "admin@example.com"
 certbot_email: "{{ vault_certbot_email }}"
 certbot_cloudflare_api_token: "{{ vault_cloudflare_token }}"
 ```
+
+## 🔒 Security considerations
+
+- Use Ansible Vault for DNS credentials and ACME email address variables.
+- Secrets masking: the role masks sensitive API tokens and credentials in template tasks using `no_log: true`.
+
+## 🧪 Check mode behavior
+
+- Informational checks and validation run in check mode.
+- Mutating commands (obtaining/revoking certificates) are skipped in check mode.
+
+## 🏷️ Tags usage
+
+- Use `--tags` to run selective parts of the role: `validate`, `install`, `configure`, `certificates`, `renewal`, `revoke`.
 
 ## 🔧 Troubleshooting
 
@@ -445,7 +459,7 @@ ansible-role-certbot/
 - `renewal` — Auto-renewal configuration tasks
 - `revoke` — Certificate revocation tasks
 
-## Example Playbook
+## Example Playbooks
 
 ```yaml
 ---
