@@ -13,8 +13,6 @@
       - "   Schedule: {{ certbot_renewal_schedule if certbot_renewal_method == 'systemd' else certbot_renewal_cron_schedule }}"
     verbosity: 1
 
-# --- Systemd Timer ---
-
 - name: Certbot | renewal | Deploy systemd service unit
   become: true
   ansible.builtin.template:
@@ -72,8 +70,6 @@
     - certbot_renewal_method == 'systemd'
     - not certbot_auto_renewal_enabled | bool
 
-# --- Cron ---
-
 - name: Certbot | renewal | Deploy cron renewal job
   become: true
   ansible.builtin.template:
@@ -95,8 +91,6 @@
   when:
     - certbot_renewal_method == 'cron'
     - not certbot_auto_renewal_enabled | bool
-
-# --- Cleanup opposite method ---
 
 - name: Certbot | renewal | Remove systemd units when using cron
   become: true
