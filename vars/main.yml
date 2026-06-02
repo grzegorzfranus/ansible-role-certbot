@@ -1,6 +1,10 @@
 ---
-# Ansible Role: Certbot - Internal constants and computed values
+# =============================================================================
+# Ansible Role: Certbot - Internal Variables
+# =============================================================================
+# Internal constants and computed values.
 # These are NOT user-overridable. All use double-underscore prefix per CoP §3.1.4.
+# =============================================================================
 
 # ACME server URLs
 __certbot_acme_server_staging: "https://acme-staging-v02.api.letsencrypt.org/directory"
