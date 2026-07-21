@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5](https://github.com/grzegorzfranus/ansible-role-certbot/compare/v1.4.4...v1.4.5) (2026-07-21)
+
+
+### CI/CD
+
+* **18:** upgrade github workflows to v3.0.1 and update documentation ([#19](https://github.com/grzegorzfranus/ansible-role-certbot/issues/19)) ([2857c0b](https://github.com/grzegorzfranus/ansible-role-certbot/commit/2857c0badc44f6b9a2ca8e3290069ab04db6e316))
+
 ## [1.4.4](https://github.com/grzegorzfranus/ansible-role-certbot/compare/v1.4.3...v1.4.4) (2026-06-29)
 
 
